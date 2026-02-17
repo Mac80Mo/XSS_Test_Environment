@@ -40,6 +40,4 @@ Lernwebanwendung zur Demonstration des Unterschieds zwischen anfälliger und sic
 ### Verwendung
 Öffne `1_basic_html/xss-test.html` in einem Webbrowser.
 
-![Screenshot](img/test.png)
-
 ⚠️ **Warnung**: Diese Anwendung ist absichtlich anfällig und nur für Lernzwecke gedacht!
