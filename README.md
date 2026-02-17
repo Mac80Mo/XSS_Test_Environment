@@ -19,6 +19,8 @@ Educational web application for demonstrating the difference between vulnerable 
 ### Usage
 Open `1_basic_html/xss-test.html` in a web browser.
 
+![Screenshot](img/test.png)
+
 ⚠️ **Warning**: This application is intentionally vulnerable and for educational purposes only!
 
 ---
@@ -37,5 +39,7 @@ Lernwebanwendung zur Demonstration des Unterschieds zwischen anfälliger und sic
 
 ### Verwendung
 Öffne `1_basic_html/xss-test.html` in einem Webbrowser.
+
+![Screenshot](img/test.png)
 
 ⚠️ **Warnung**: Diese Anwendung ist absichtlich anfällig und nur für Lernzwecke gedacht!
