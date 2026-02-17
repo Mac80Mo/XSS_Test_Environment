@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XSS Test Environment</title>
+    <style>
+        :root {
+            /* Light Mode (Default for toggle, but starts in dark) */
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --container-bg: #ffffff;
+            --container-border: #333333;
+            --output-bg: #f0f0f0;
+            --button-bg: #007bff;
+            --button-text: #ffffff;
+            --button-hover: #0056b3;
+            --toggle-bg: #e0e0e0;
+            --toggle-border: #999999;
+        }
+
+        body.dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --container-bg: #2a2a2a;
+            --container-border: #555555;
+            --output-bg: #3a3a3a;
+            --button-bg: #0d6efd;
+            --button-text: #ffffff;
+            --button-hover: #0a58ca;
+            --toggle-bg: #3a3a3a;
+            --toggle-border: #555555;
+        }
+
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .toggle-bar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            background-color: var(--toggle-bg);
+            border: 1px solid var(--toggle-border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        .toggle-btn:hover {
+            opacity: 0.8;
+        }
+
+        input, button {
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        input {
+            width: 70%;
+            background-color: var(--output-bg);
+            color: var(--text-color);
+            border: 1px solid var(--container-border);
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: var(--button-hover);
+        }
+
+        #output, #secureOutput {
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--output-bg);
+            border-radius: 5px;
+            min-height: 50px;
+            border: 1px solid var(--container-border);
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--container-border);
+            margin: 30px 0;
+        }
+
+        /* Info Icon */
+        .info-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #808080;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            font-style: italic;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            font-family: Georgia, serif;
+        }
+
+        .info-icon:hover {
+            background-color: #606060;
+            transform: scale(1.1);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--container-bg);
+            color: var(--text-color);
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            border: 2px solid var(--container-border);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: var(--text-color);
+            background: none;
+            border: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            color: var(--button-hover);
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: var(--text-color);
+        }
+
+        .modal-content h3 {
+            margin-top: 20px;
+            color: var(--button-bg);
+            font-size: 18px;
+        }
+
+        .modal-content p {
+            line-height: 1.6;
+            margin: 10px 0;
+        }
+
+        .modal-content ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+
+        .modal-content li {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+
+        .modal-content code {
+            background-color: var(--output-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .modal-content .warning-box {
+            background-color: var(--output-bg);
+            border-left: 4px solid #ff6b6b;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .container {
+            position: relative;
+            border: 2px solid var(--container-border);
+            padding: 20px;
+            border-radius: 8px;
+            background-color: var(--container-bg);
+        }
+
+        /* Responsive: Verhindert Überlappung von Toggle-Bar und Info-Icon */
+        @media (max-width: 600px) {
+            .toggle-bar {
+                top: 10px;
+                right: 10px;
+                gap: 5px;
+            }
+            
+            .toggle-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+            
+            .info-icon {
+                top: 60px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="toggle-bar">
+        <button class="toggle-btn" id="themeToggle" onclick="toggleTheme()">🌙 Dark</button>
+        <button class="toggle-btn" id="langToggle" onclick="toggleLanguage()">DE</button>
+    </div>
+
+    <div class="container">
+        <div class="info-icon" onclick="openModal()" title="Information">
+            i
+        </div>
+        <h1 data-i18n="title">🔒 XSS Learning Lab</h1>
+        <p><strong data-i18n="warning-label">Warnung:</strong> <span data-i18n="warning-text">Diese Seite ist absichtlich unsicher für Lernzwecke!</span></p>
+        
+        <!-- VULNERABLE VERSION (zum Lernen) -->
+        <h2 data-i18n="vulnerable-title">Anfälliges Eingabefeld:</h2>
+        <p data-i18n="vulnerable-desc">Das anfällige Eingabefeld verwendet innerHTML, wodurch die Benutzereingabe als HTML-Code interpretiert und gerendert wird. HTML-Tags werden vom Browser geparst, HTML-Elemente erstellt und Event-Handler wie onerror oder onload ausgeführt, was Cross-Site-Scripting-Angriffe ermöglicht.</p>
+        <input type="text" id="userInput" data-i18n-placeholder="input-placeholder" placeholder="Gib etwas ein...">
+        <button onclick="displayVulnerable()" data-i18n="btn-vulnerable">Anzeigen (Unsicher)</button>
+        <button onclick="clearOutput('userInput', 'output')" data-i18n="btn-clear">Löschen</button>
+        <div id="output"></div>
+
+        <hr>
+
+        <!-- SECURE VERSION (zum Vergleich) -->
+        <h2 data-i18n="secure-title">Sicheres Eingabefeld:</h2>
+        <p data-i18n="secure-desc">Das sichere Eingabefeld verwendet textContent, wodurch die Eingabe ausschließlich als reiner Text behandelt wird. Alle Zeichen werden automatisch escaped und wörtlich dargestellt, sodass kein HTML geparst oder JavaScript ausgeführt werden kann, unabhängig vom Inhalt der Eingabe.</p>
+        <input type="text" id="secureInput" data-i18n-placeholder="input-placeholder" placeholder="Gib etwas ein...">
+        <button onclick="displaySecure()" data-i18n="btn-secure">Anzeigen (Sicher)</button>
+        <button onclick="clearOutput('secureInput', 'secureOutput')" data-i18n="btn-clear">Löschen</button>
+        <div id="secureOutput"></div>
+    </div>
+
+    <!-- Info Modal -->
+    <div class="modal-overlay" id="infoModal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // Translations
+        const translations = {
+            de: {
+                'title': '🔒 XSS Learning Lab',
+                'warning-label': 'Warnung:',
+                'warning-text': 'Diese Seite ist absichtlich unsicher für Lernzwecke!',
+                'vulnerable-title': 'Anfälliges Eingabefeld:',
+                'vulnerable-desc': 'Das anfällige Eingabefeld verwendet innerHTML, wodurch die Benutzereingabe als HTML-Code interpretiert und gerendert wird. HTML-Tags werden vom Browser geparst, HTML-Elemente erstellt und Event-Handler wie onerror oder onload ausgeführt, was Cross-Site-Scripting-Angriffe ermöglicht.',
+                'secure-title': 'Sicheres Eingabefeld:',
+                'secure-desc': 'Das sichere Eingabefeld verwendet textContent, wodurch die Eingabe ausschließlich als reiner Text behandelt wird. Alle Zeichen werden automatisch escaped und wörtlich dargestellt, sodass kein HTML geparst oder JavaScript ausgeführt werden kann, unabhängig vom Inhalt der Eingabe.',
+                'input-placeholder': 'Gib etwas ein...',
+                'btn-vulnerable': 'Anzeigen (Unsicher)',
+                'btn-secure': 'Anzeigen (Sicher)',
+                'btn-clear': 'Löschen',
+                'modal-title': 'ℹ️ Informationen & Anleitung',
+                'modal-purpose-title': '🎯 Zweck dieser Seite',
+                'modal-purpose-text': 'Diese Seite ist eine sichere Lernumgebung für Cross-Site Scripting (XSS). XSS ist eine Sicherheitslücke, bei der Angreifer schädlichen Code in Webseiten einschleusen können. Hier können Sie gefahrlos testen und verstehen, wie XSS funktioniert und wie man sich davor schützt.',
+                'modal-vulnerable-title': '⚠️ Anfälliges Eingabefeld (Unsicher)',
+                'modal-vulnerable-text': 'Das obere Feld verwendet <code>innerHTML</code> und ist absichtlich unsicher. Hier können Sie XSS-Payloads testen.',
+                'modal-secure-title': '✅ Sicheres Eingabefeld (Geschützt)',
+                'modal-secure-text': 'Das untere Feld verwendet <code>textContent</code> und ist sicher. Alle Eingaben werden als reiner Text behandelt - probieren Sie die gleichen Payloads hier aus und sehen Sie den Unterschied!',
+                'modal-features-title': '🛠️ Features & Bedienung',
+                'modal-feature-1': '<strong>🌙/☀️ Theme Toggle:</strong> Wechselt zwischen Dark und Light Mode',
+                'modal-feature-2': '<strong>DE/EN Toggle:</strong> Wechselt die Sprache',
+                'modal-feature-3': '<strong>Löschen-Button:</strong> Setzt Eingabe und Ausgabe zurück',
+                'modal-feature-4': '<strong>Ausgabebereiche:</strong> Zeigen das Ergebnis Ihrer Eingabe an',
+                'modal-warning-title': '⚠️ Wichtige Warnung',
+                'modal-warning-text': 'Diese Seite ist ausschließlich für Lernzwecke gedacht! Verwenden Sie innerHTML NIEMALS in Produktionsumgebungen ohne ordnungsgemäße Absicherung.'
+            },
+            en: {
+                'title': '🔒 XSS Learning Lab',
+                'warning-label': 'Warning:',
+                'warning-text': 'This page is intentionally insecure for learning purposes!',
+                'vulnerable-title': 'Vulnerable Input Field:',
+                'vulnerable-desc': 'The vulnerable input field uses innerHTML, which interprets user input as HTML code. HTML tags are parsed by the browser, HTML elements are created, and event handlers like onerror or onload are executed, enabling Cross-Site Scripting attacks.',
+                'secure-title': 'Secure Input Field:',
+                'secure-desc': 'The secure input field uses textContent, which treats the input exclusively as plain text. All characters are automatically escaped and displayed literally, preventing any HTML parsing or JavaScript execution, regardless of the input content.',
+                'input-placeholder': 'Enter something...',
+                'btn-vulnerable': 'Display (Unsafe)',
+                'btn-secure': 'Display (Safe)',
+                'btn-clear': 'Clear',
+                'modal-title': 'ℹ️ Information & Guide',
+                'modal-purpose-title': '🎯 Purpose of This Page',
+                'modal-purpose-text': 'This page is a safe learning environment for Cross-Site Scripting (XSS). XSS is a security vulnerability where attackers can inject malicious code into web pages. Here you can safely test and understand how XSS works and how to protect against it.',
+                'modal-vulnerable-title': '⚠️ Vulnerable Input Field (Unsafe)',
+                'modal-vulnerable-text': 'The upper field uses <code>innerHTML</code> and is intentionally insecure. You can test XSS payloads here.',
+                'modal-secure-title': '✅ Secure Input Field (Protected)',
+                'modal-secure-text': 'The lower field uses <code>textContent</code> and is secure. All inputs are treated as plain text - try the same payloads here and see the difference!',
+                'modal-features-title': '🛠️ Features & Usage',
+                'modal-feature-1': '<strong>🌙/☀️ Theme Toggle:</strong> Switches between Dark and Light Mode',
+                'modal-feature-2': '<strong>DE/EN Toggle:</strong> Changes the language',
+                'modal-feature-3': '<strong>Clear Button:</strong> Resets input and output',
+                'modal-feature-4': '<strong>Output Areas:</strong> Display the result of your input',
+                'modal-warning-title': '⚠️ Important Warning',
+                'modal-warning-text': 'This page is for educational purposes ONLY! NEVER use innerHTML in production environments without proper security measures.'
+            }
+        };
+
+        // Initialize language and theme from localStorage
+        let currentLang = localStorage.getItem('language') || 'de';
+        let currentTheme = localStorage.getItem('theme') || 'dark';
+
+        // Apply saved theme on load
+        if (currentTheme === 'light') {
+            document.body.classList.remove('dark-mode');
+        }
+
+        // Update UI on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLanguage();
+            updateThemeToggleButton();
+            updateModal();
+        });
+
+        // Toggle Theme Function
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            currentTheme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            localStorage.setItem('theme', currentTheme);
+            updateThemeToggleButton();
+        }
+
+        function updateThemeToggleButton() {
+            const themeBtn = document.getElementById('themeToggle');
+            if (document.body.classList.contains('dark-mode')) {
+                themeBtn.textContent = '🌙 Dark';
+            } else {
+                themeBtn.textContent = '☀️ Light';
+            }
+        }
+
+        // Toggle Language Function
+        function toggleLanguage() {
+            currentLang = currentLang === 'de' ? 'en' : 'de';
+            localStorage.setItem('language', currentLang);
+            updateLanguage();
+            updateLanguageToggleButton();
+        }
+
+        function updateLanguage() {
+            const elements = document.querySelectorAll('[data-i18n]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[currentLang][key]) {
+                    el.textContent = translations[currentLang][key];
+                }
+            });
+
+            // Update placeholders
+            const placeholders = document.querySelectorAll('[data-i18n-placeholder]');
+            placeholders.forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (translations[currentLang][key]) {
+                    el.placeholder = translations[currentLang][key];
+                }
+            });
+
+            updateLanguageToggleButton();
+            updateModal();
+        }
+
+        function updateLanguageToggleButton() {
+            const langBtn = document.getElementById('langToggle');
+            langBtn.textContent = currentLang === 'de' ? 'DE' : 'EN';
+        }
+
+        // ANFÄLLIGE VERSION - NICHT in Produktion verwenden!
+        function displayVulnerable() {
+            const input = document.getElementById('userInput').value;
+            // innerHTML ohne Sanitization = XSS-anfällig
+            document.getElementById('output').innerHTML = input;
+        }
+
+        // SICHERE VERSION
+        function displaySecure() {
+            const input = document.getElementById('secureInput').value;
+            // textContent escaped automatisch HTML
+            document.getElementById('secureOutput').textContent = input;
+        }
+
+        // Clear-Funktion zum Zurücksetzen der Eingabe und Ausgabe
+        function clearOutput(inputId, outputId) {
+            document.getElementById(inputId).value = '';
+            document.getElementById(outputId).innerHTML = '';
+        }
+
+        // Modal Functions
+        function openModal() {
+            document.getElementById('infoModal').classList.add('active');
+        }
+
+        function closeModal(event) {
+            if (!event || event.target.id === 'infoModal' || event.type === 'click') {
+                document.getElementById('infoModal').classList.remove('active');
+            }
+        }
+
+        function updateModal() {
+            const t = translations[currentLang];
+            const modalBody = document.getElementById('modalBody');
+            
+            // Note: innerHTML ist hier sicher, da translations kontrollierte Daten sind
+            // Kein User-Input in diesem Content-Bereich
+            modalBody.innerHTML = `
+                <h2>${t['modal-title']}</h2>
+                
+                <h3>${t['modal-purpose-title']}</h3>
+                <p>${t['modal-purpose-text']}</p>
+                
+                <h3>${t['modal-vulnerable-title']}</h3>
+                <p>${t['modal-vulnerable-text']}</p>
+                
+                <h3>${t['modal-secure-title']}</h3>
+                <p>${t['modal-secure-text']}</p>
+                
+                <h3>${t['modal-features-title']}</h3>
+                <ul>
+                    <li>${t['modal-feature-1']}</li>
+                    <li>${t['modal-feature-2']}</li>
+                    <li>${t['modal-feature-3']}</li>
+                    <li>${t['modal-feature-4']}</li>
+                </ul>
+                
+                <div class="warning-box">
+                    <h3>${t['modal-warning-title']}</h3>
+                    <p>${t['modal-warning-text']}</p>
+                </div>
+            `;
+        }
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
